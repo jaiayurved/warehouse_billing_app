@@ -1,4 +1,13 @@
-const categories = [ "चूर्ण" ,  "तैल", "वटी गुटिका", "अवलेह", "पाक" ,"Gugglu", "Patent" , "Mansi" ];
+const categories = [
+  "चूर्ण",
+  "तैल",
+  "वटी गुटिका",
+  "अवलेह",
+  "पाक",
+  "गुग्गुल",
+  "पेटेंट",
+  "मानसी"
+];
 
 export default function CategoryTabs({ currentCategory, onSelect }) {
   return (

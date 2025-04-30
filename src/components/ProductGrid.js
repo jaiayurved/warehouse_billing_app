@@ -1,49 +1,68 @@
-// ProductGrid.js (Hybrid variant logic)
-import React from 'react';
+import React from "react";
 
-const groupByVariant = (items) => {
-  const groups = {};
+export default function ProductGrid({ items, cart, onAdd, showToast, setTab }) {
+  const grouped = {};
+
   items.forEach((item) => {
-    const key = item.variantOf || item.name.split(/\s+/)[0];
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(item);
+    const parts = (item.name || "").split(" ");
+    const key = parts[0];
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
   });
-  return Object.entries(groups);
-};
 
-export default function ProductGrid({ items, cart, onAdd }) {
-  const groupedItems = groupByVariant(items);
+  const isInCart = (name) => cart.some((c) => c.name === name);
 
   return (
-    <div className="px-2 sm:px-4 space-y-6">
-      {groupedItems.map(([baseName, variants], idx) => (
-        <div key={idx}>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">{baseName}</h3>
-          <div className="flex overflow-x-auto gap-4 pb-2">
-            {variants.map((item, i) => (
-              <div
-                key={i}
-                className="min-w-[250px] bg-white border border-blue-100 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all"
-              >
-                <h4 className="text-md font-bold text-gray-800 mb-1">{item.name}</h4>
-                <p className="text-sm text-gray-400 mb-4">{item.category}</p>
-
-                <button
-                  onClick={() => onAdd(item)}
-                  disabled={cart.some((i) => i.name === item.name)}
-                  className={`w-full py-2 text-sm rounded-xl font-bold transition-all duration-200 shadow-md ${
-                    cart.some((i) => i.name === item.name)
-                      ? 'bg-blue-300 text-white cursor-not-allowed'
-                      : 'bg-blue-500 text-white hover:bg-blue-600'
-                  }`}
-                >
-                  {cart.some((i) => i.name === item.name) ? '✔️ Added' : '➕ Add to Order'}
-                </button>
-              </div>
-            ))}
+    <div className="relative pb-24">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {Object.entries(grouped).map(([group, groupItems]) => (
+          <div key={group} className="bg-white border rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">{group}</h2>
+            <ul className="space-y-3">
+              {groupItems.map((item, i) => (
+                <li key={i} className="flex justify-between items-center">
+                  <span className="font-medium text-gray-800 text-sm truncate w-2/3">{item.name}</span>
+                  <button
+                    onClick={() => {
+                      if (isInCart(item.name)) {
+                        showToast && showToast("⚠️ Already in cart");
+                      } else {
+                        onAdd(item);
+                        showToast && showToast("✅ Added to cart");
+                      }
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-1 rounded-full shadow-sm transition-transform active:scale-95"
+                  >
+                    ➕ Add
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Sticky Review Button */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 p-4 shadow-md z-50 flex justify-center">
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-semibold px-4 py-2 rounded-full shadow mr-4"
+        >
+          ⭐ View Favorites
+        </button>
+
+        <button
+          onClick={() => setTab("review")}
+          disabled={cart.length === 0}
+          className={`text-base font-semibold px-6 py-3 rounded-full shadow-md transition-all duration-200 ${
+            cart.length === 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white"
+          }`}
+        >
+          ➡️ आगे जाएं (Review Cart)
+        </button>
+      </div>
     </div>
   );
 }

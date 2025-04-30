@@ -1,7 +1,31 @@
-import products from "../data/products";
+// utils/getBatchDetails.js
 
-export default function getBatchDetails(itemName, batchCode) {
-  const product = products.find(p => p.name === itemName);
-  const entry = product?.batches?.find(b => b.batch === batchCode);
-  return entry || null;
+let productData = [];
+
+export function setProductData(data) {
+  productData = data || [];
 }
+
+export default function getBatchDetails(itemName, batchNo) {
+  const item = productData.find(
+    (p) => p.name === itemName && p.batches?.some((b) => b.batch === batchNo)
+  );
+
+  const batchDetails = item?.batches?.find((b) => b.batch === batchNo);
+
+  if (!item || !batchDetails) return null;
+
+  return {
+    mfg: batchDetails.mfg,
+    exp: batchDetails.exp,
+    Rate: item.Rate || 0,
+    MRP: item.MRP || 0
+  };
+}
+
+export function getBatchesForItem(itemName) {
+  const item = productData.find((p) => p.name === itemName);
+  return item?.batches || [];
+}
+
+getBatchDetails.getBatchesForItem = getBatchesForItem; // ✅ Backward compatibility

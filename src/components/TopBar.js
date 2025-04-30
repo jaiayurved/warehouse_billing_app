@@ -4,9 +4,10 @@ import React from "react";
 
 export default function TopBar({ dealerName, tab, setTab, cartCount }) {
   return (
+
     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 px-2 py-3 bg-white rounded-xl shadow-sm border border-blue-200">
       <div className="text-xl font-bold text-blue-700">
-        VEDIC AURA {dealerName ? `| ${dealerName}` : ""}
+        ASHISH MEDICAL AGENCIES {dealerName ? `| ${dealerName}` : ""}
       </div>
       <div className="flex gap-2 mt-2 sm:mt-0">
         <button
@@ -21,6 +22,7 @@ export default function TopBar({ dealerName, tab, setTab, cartCount }) {
         >
           Favorites {cartCount > 0 && `(${cartCount})`}
         </button>
+
       </div>
     </div>
   );
