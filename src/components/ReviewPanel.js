@@ -1,5 +1,5 @@
 import React from "react";
-import exportTallyExcel from '../utils/exportTallyExcel';
+import exportTallyExcel from "../utils/exportTallyExcel";
 
 export default function ReviewPanel({
   cart,
@@ -7,16 +7,48 @@ export default function ReviewPanel({
   vehicleNumber,
   notes,
   onPrint,
-  onSendWhatsapp,
-  onAddMore,
-   dealerPhone   // 🔥 Add here too
+  onSendWhatsapp, // retained for compatibility, not used here
+  onAddMore
 }) {
   const totalCTN = cart.reduce((sum, item) =>
-    sum + item.entries.reduce((eSum, e) => eSum + (e.ctn || 0), 0), 0);
+    sum + item.entries.reduce((eSum, e) => eSum + (e.ctn || 0), 0), 0
+  );
 
   const handleSendWhatsapp = () => {
-    exportTallyExcel(cart);
-    onSendWhatsapp();
+    const phoneNumber = "919929988408"; // ✅ Fixed WhatsApp number
+    const dealerName = "Factory";
+
+    const timestamp = new Date().toLocaleString().replace(/[/,: ]+/g, "_");
+    const filename = `${dealerName}_${timestamp}`;
+
+    // 1. Export Excel
+    exportTallyExcel(cart, filename, vehicleName, vehicleNumber, notes);
+
+    // 2. Build WhatsApp message
+    let msg = `🛒 *Factory to Office Dispatch Summary*\n👤 सरना से ऑफिस\n`;
+
+    cart.forEach(item => {
+      const totalQty = item.entries.reduce(
+        (sum, e) => sum + ((e.qty || 0) * (e.ctn || 0)),
+        0
+      );
+
+      msg += `\n\n🔹 *${item.name}* Total = *${totalQty}* pcs`;
+      item.entries.forEach(e => {
+        msg += `\n  Batch: ${e.batch || '-'}, *${e.qty || 0}* pc × ${e.ctn || 0} कार्टून`;
+      });
+    });
+
+    msg += `\n\n🚛 वाहन: ${vehicleName || 'N/A'} (${vehicleNumber || 'N/A'})`;
+    msg += `\n📦 कुल CTNs: ${totalCTN || 0}`;
+    if (notes) msg += `\n📝 नोट्स: ${notes}`;
+
+    const confirmSend = window.confirm("✅ Excel downloaded. Send WhatsApp now?");
+    if (confirmSend) {
+      const encoded = encodeURIComponent(msg);
+      const url = `https://wa.me/${phoneNumber}?text=${encoded}`;
+      window.open(url, "_blank");
+    }
   };
 
   return (
@@ -43,7 +75,9 @@ export default function ReviewPanel({
                     <td className="py-1">{entry.batch}</td>
                     <td className="py-1">{entry.qty}</td>
                     <td className="py-1">{entry.ctn}</td>
-                    <td className="py-1 font-bold text-green-700">{(entry.qty || 0) * (entry.ctn || 0)}</td>
+                    <td className="py-1 font-bold text-green-700">
+                      {(entry.qty || 0) * (entry.ctn || 0)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -85,15 +119,6 @@ export default function ReviewPanel({
         </div>
       </div>
 
-
-{dealerPhone === "BILL001" && (
-  <button>📄 Generate Invoice</button>
-)}
-
-
-
-
-
       {/* Print Format */}
       <div className="hidden print:block mt-10">
         <h2 className="font-bold text-lg mb-4 text-center">🏭 Factory to Warehouse Order</h2>
@@ -119,7 +144,9 @@ export default function ReviewPanel({
                   <td className="border px-2 py-1">{entry.exp}</td>
                   <td className="border px-2 py-1 text-center">{entry.qty}</td>
                   <td className="border px-2 py-1 text-center">{entry.ctn}</td>
-                  <td className="border px-2 py-1 text-center">{(entry.qty || 0) * (entry.ctn || 0)}</td>
+                  <td className="border px-2 py-1 text-center">
+                    {(entry.qty || 0) * (entry.ctn || 0)}
+                  </td>
                 </tr>
               ))
             )}

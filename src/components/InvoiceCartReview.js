@@ -3,12 +3,18 @@ import exportInvoiceExcel from "../utils/exportInvoiceExcel";
 import PDFInvoice from "./PDFInvoice";
 
 export default function InvoiceCartReview({
-  cart, vehicleName, vehicleNumber, notes, onSubmit, setTab, buyersList
+  cart,
+  vehicleName,
+  vehicleNumber,
+  notes,
+  onSubmit,
+  setTab,
+  buyersList
 }) {
   const [selectedBuyer, setSelectedBuyer] = useState(null);
   const [invoiceData, setInvoiceData] = useState([]);
+  const [invoiceNo] = useState(() => `INV-${new Date().getFullYear()}${(new Date().getMonth()+1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}-${Math.floor(Math.random()*1000)}`);
 
-  // STEP 1: Flatten all batch entries
   useEffect(() => {
     const allEntries = cart.flatMap(item =>
       item.entries
@@ -18,24 +24,23 @@ export default function InvoiceCartReview({
           batch: entry.batch,
           mfg: entry.mfg,
           exp: entry.exp,
-          qty: (entry.qty || 0) * (entry.ctn || 0),
+          qty: entry.qty * entry.ctn,
           rate: entry.rate || 0,
-          billedQty: (entry.qty || 0) * (entry.ctn || 0),
+          billedQty: entry.qty * entry.ctn,
           discount: 0,
         }))
     );
     setInvoiceData(allEntries);
   }, [cart]);
 
-  // STEP 2: Apply buyer scheme and discount
   useEffect(() => {
     if (selectedBuyer) {
       const updated = invoiceData.map(item => {
         let billedQty = item.qty;
         if (selectedBuyer.scheme === "3+1") {
-          billedQty = Math.round(item.qty * (3 / 4));
+          billedQty = Math.round(item.qty * 3 / 4);
         } else if (selectedBuyer.scheme === "5+1") {
-          billedQty = Math.round(item.qty * (5 / 6));
+          billedQty = Math.round(item.qty * 5 / 6);
         }
         return {
           ...item,
@@ -60,6 +65,15 @@ export default function InvoiceCartReview({
     }
 
     exportInvoiceExcel(invoiceData, selectedBuyer, grandTotal);
+
+    let msg = `🧾 *Invoice from ${selectedBuyer.name}*\nNo: ${invoiceNo}`;
+    invoiceData.forEach((item, i) => {
+      msg += `\n${i + 1}. ${item.name} | Qty: ${item.qty} | Billed: ${item.billedQty} | ₹${item.rate}`;
+    });
+    msg += `\n\nTotal: ₹${grandTotal.toFixed(2)}`;
+    const url = `https://wa.me/919929988408?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+
     onSubmit();
   };
 
@@ -77,11 +91,9 @@ export default function InvoiceCartReview({
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      {/* Buyer Selection */}
-      <div className="print:hidden">
+    <div className="max-w-5xl mx-auto p-6 space-y-6 pb-36">
+      <div className="print:hidden sticky top-0 z-10 bg-white pb-2">
         <h2 className="text-2xl font-bold text-center border-b pb-4">🧾 Generate Invoice</h2>
-
         <label className="block mb-2 text-sm">Select Buyer</label>
         <select
           className="w-full border px-4 py-2 rounded"
@@ -102,11 +114,11 @@ export default function InvoiceCartReview({
             <p><strong>💼 Buyer:</strong> {selectedBuyer.name}</p>
             <p><strong>🏠 Address:</strong> {selectedBuyer.address}</p>
             <p><strong>🧾 GSTIN:</strong> {selectedBuyer.gstin}</p>
+            <p><strong>📄 Invoice No:</strong> {invoiceNo}</p>
           </div>
         )}
       </div>
 
-      {/* Invoice Table */}
       <div className="overflow-x-auto print:hidden">
         <table className="min-w-full text-sm border">
           <thead className="bg-blue-50">
@@ -126,8 +138,8 @@ export default function InvoiceCartReview({
             {invoiceData.map((item, i) => {
               const lineTotal = (parseFloat(item.billedQty) * parseFloat(item.rate) * (1 - (parseFloat(item.discount) || 0) / 100)).toFixed(2);
               return (
-                <tr key={i}>
-                  <td className="border p-2">{item.name}</td>
+                <tr key={i} className={item.discount > 0 ? 'bg-yellow-50' : ''}>
+                  <td className="border p-2 font-bold">{item.name}</td>
                   <td className="border p-2">{item.batch}</td>
                   <td className="border p-2">{item.mfg}</td>
                   <td className="border p-2">{item.exp}</td>
@@ -137,8 +149,7 @@ export default function InvoiceCartReview({
                       type="number"
                       value={item.rate}
                       onChange={(e) => handleChange(i, 'rate', e.target.value)}
-                      className="w-20 border rounded px-2 py-1"
-                    />
+                      className="w-20 border rounded px-2 py-1 font-bold" />
                   </td>
                   <td className="border p-2">
                     <input
@@ -156,9 +167,7 @@ export default function InvoiceCartReview({
                       className="w-20 border rounded px-2 py-1"
                     />
                   </td>
-                  <td className="border p-2 font-bold text-green-700 text-center">
-                    ₹ {lineTotal}
-                  </td>
+                  <td className="border p-2 font-bold text-green-700 text-center">₹ {lineTotal}</td>
                 </tr>
               );
             })}
@@ -166,46 +175,36 @@ export default function InvoiceCartReview({
         </table>
       </div>
 
-      {/* Grand Total */}
       <div className="text-right font-bold text-xl mt-4 print:hidden">
         Grand Total: ₹ {grandTotal.toFixed(2)}
       </div>
 
-      {/* Action Buttons */}
-      <div className="fixed bottom-4 left-1/4 flex justify-center gap-6 mt-8 flex-wrap print:hidden">
+      <div className="print:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-4 shadow-inner z-50 flex justify-center gap-4">
         <button
-          onClick={() => window.print()}
+          type="button"
           disabled={!selectedBuyer}
-          className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+          onClick={() => window.print()} className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
         >
           🖨️ Print Invoice
         </button>
 
         <button
-          onClick={handleSend}
-          disabled={!selectedBuyer}
-          className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+          id="send-whatsapp-btn" type="button" onClick={handleSend} disabled={!selectedBuyer} className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
         >
-          📤 Send & Export
+          📤 WhatsAPP
+        </button>
+
+        <button
+          type="button"
+          onClick={handleAddMore}
+          className="px-8 py-3 rounded-full text-lg shadow-md bg-purple-500 hover:bg-purple-600 text-white"
+        >
+          ➕ Add More Items
         </button>
       </div>
 
-      {/* Print PDF View */}
       {selectedBuyer && (
-
         <PDFInvoice cart={invoiceData} buyer={selectedBuyer} grandTotal={grandTotal} />
-      )}
-
-      {/* ➕ Add More Items Button */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-4 right-1 transform -translate-x-1/2 z-50 print:hidden">
-          <button
-            onClick={handleAddMore}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg"
-          >
-            ➕ Add More Items
-          </button>
-        </div>
       )}
     </div>
   );

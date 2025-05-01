@@ -19,13 +19,13 @@ export default function submitOrder({
     const safeDealer = dealerName.replace(/\s+/g, "_");
     const filename = `${safeDealer}_${timestamp}`;
 
-    // ✅ 1. Export Excel
+    // 1. Export Excel
     exportToCSV(cart, filename, vehicleName, vehicleNumber, notes);
     if (typeof showToast === 'function') {
       showToast("🧾 Stock Journal Excel downloaded");
     }
 
-    // ✅ 2. Build WhatsApp message
+    // 2. Build WhatsApp message
     let msg = `🛒 *Factory to Office Dispatch Summary*\n👤 सरना से ऑफिस\n`;
 
     cart.forEach(item => {
@@ -46,15 +46,14 @@ export default function submitOrder({
 
     console.log("📦 WhatsApp Message Preview:\n", msg);
 
-    // ✅ 3. Send WhatsApp
-    sendViaWhatsApp(phoneNumber, msg);
+    // ✅ Instead of sending now, return the info to caller
+    return { success: true, phoneNumber, msg };
 
-    return true; // ✅ Success
   } catch (error) {
     console.error("❌ submitOrder failed:", error);
     if (typeof showToast === 'function') {
-      showToast("❌ Failed to export or send order");
+      showToast("❌ Failed to export or prepare WhatsApp message");
     }
-    return false; // ❌ Failure
+    return { success: false };
   }
 }

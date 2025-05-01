@@ -92,13 +92,13 @@ export default function CartReview({
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Qty (pcs)</label>
+                  <label className="block text-xs text-gray-800 mb-1">Qty (pcs)</label>
                   <input
                     type="number"
                     value={entry.qty || ""}
                     onChange={(e) => handleBatchChange(itemIndex, batchIndex, 'qty', parseInt(e.target.value) || 0)}
                     min="0"
-                    className={`border px-3 py-1 rounded w-24 ${entry.qty > 0 ? 'border-green-400' : 'border-gray-300'}`}
+                    className={`border px-1 py-1 rounded w-20 ${entry.qty > 0 ? 'border-green-400' : 'border-gray-300'}`}
                   />
                 </div>
 
@@ -109,7 +109,7 @@ export default function CartReview({
                     value={entry.ctn || ""}
                     onChange={(e) => handleBatchChange(itemIndex, batchIndex, 'ctn', parseInt(e.target.value) || 0)}
                     min="0"
-                    className={`border px-3 py-1 rounded w-24 ${entry.ctn > 0 ? 'border-green-400' : 'border-gray-300'}`}
+                    className={`border px-3 py-1 rounded w-20 ${entry.ctn > 0 ? 'border-green-800' : 'border-gray-300'}`}
                   />
                 </div>
 
@@ -127,7 +127,7 @@ export default function CartReview({
                       }
                       handleBatchChange(itemIndex, batchIndex, 'mfg', val);
                     }}
-                    className="border px-3 py-1 rounded w-28 text-sm"
+                    className="border px-3 py-1 rounded w-20 text-sm"
                   />
                 </div>
 
@@ -145,7 +145,7 @@ export default function CartReview({
                       }
                       handleBatchChange(itemIndex, batchIndex, 'exp', val);
                     }}
-                    className="border px-3 py-1 rounded w-28 text-sm"
+                    className="border px-3 py-1 rounded w-20 text-sm"
                   />
                 </div>
 
