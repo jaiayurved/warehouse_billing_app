@@ -13,7 +13,9 @@ export default function InvoiceCartReview({
 }) {
   const [selectedBuyer, setSelectedBuyer] = useState(null);
   const [invoiceData, setInvoiceData] = useState([]);
-  const [invoiceNo] = useState(() => `INV-${new Date().getFullYear()}${(new Date().getMonth()+1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}-${Math.floor(Math.random()*1000)}`);
+  const [customInvoiceNo, setCustomInvoiceNo] = useState("INV-001");
+
+  const invoiceNo = `2025-26/${customInvoiceNo}`;
 
   useEffect(() => {
     const allEntries = cart.flatMap(item =>
@@ -109,6 +111,21 @@ export default function InvoiceCartReview({
           ))}
         </select>
 
+        {/* Invoice Number Input */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">🧾 Invoice No</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={customInvoiceNo}
+              onChange={(e) => setCustomInvoiceNo(e.target.value)}
+              className="border px-4 py-2 rounded w-60"
+              placeholder="INV-001"
+            />
+            <span className="text-gray-600 font-semibold">-2025-26</span>
+          </div>
+        </div>
+
         {selectedBuyer && (
           <div className="bg-blue-50 p-4 mt-4 rounded shadow-sm space-y-1 text-sm">
             <p><strong>💼 Buyer:</strong> {selectedBuyer.name}</p>
@@ -179,17 +196,18 @@ export default function InvoiceCartReview({
         Grand Total: ₹ {grandTotal.toFixed(2)}
       </div>
 
-      <div className="print:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-4 shadow-inner z-50 flex justify-center gap-4">
+      <div className="print:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-2 shadow-inner z-90 flex justify-center gap-4">
         <button
           type="button"
           disabled={!selectedBuyer}
-          onClick={() => window.print()} className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+          onClick={() => window.print()}
+          className={`px-4 py-2 rounded-full text-base shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
         >
           🖨️ Print Invoice
         </button>
 
         <button
-          id="send-whatsapp-btn" type="button" onClick={handleSend} disabled={!selectedBuyer} className={`px-8 py-3 rounded-full text-lg shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+          id="send-whatsapp-btn" type="button" onClick={handleSend} disabled={!selectedBuyer} className={`px-5 py-2 rounded-full text-base shadow-md ${selectedBuyer ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
         >
           📤 WhatsAPP
         </button>
@@ -197,15 +215,19 @@ export default function InvoiceCartReview({
         <button
           type="button"
           onClick={handleAddMore}
-          className="px-8 py-3 rounded-full text-lg shadow-md bg-purple-500 hover:bg-purple-600 text-white"
+          className="px-6 py-2 rounded-full text-base shadow-md bg-purple-500 hover:bg-purple-600 text-white"
         >
           ➕ Add More Items
         </button>
       </div>
 
       {selectedBuyer && (
-        <PDFInvoice cart={invoiceData} buyer={selectedBuyer} grandTotal={grandTotal} />
-      )}
+        <PDFInvoice
+  cart={invoiceData}
+  buyer={{ ...selectedBuyer, invoiceNumber: invoiceNo }}
+  grandTotal={grandTotal}
+/>
+ )}
     </div>
   );
 }
