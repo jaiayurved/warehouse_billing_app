@@ -1,0 +1,185 @@
+import React, { useState, useEffect } from 'react';
+import exportInvoiceExcel from "../utils/exportInvoiceExcel";
+import PDFInvoice from "./PDFInvoice";
+
+export default function InvoiceCartReview({
+  cart,
+  vehicleName,
+  vehicleNumber,
+  notes,
+  onSubmit,
+  setTab,
+  buyersList
+}) {
+  const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [invoiceData, setInvoiceData] = useState([]);
+  const [customInvoiceNo, setCustomInvoiceNo] = useState(" ");
+
+  const invoiceNo = `2025-26/${customInvoiceNo}`;
+
+  useEffect(() => {
+    const allEntries = cart.flatMap(item =>
+      item.entries.filter(e => e.batch && e.qty > 0 && e.ctn > 0).map(entry => ({
+        name: item.name,
+        batch: entry.batch,
+        mfg: entry.mfg,
+        exp: entry.exp,
+        qty: entry.qty * entry.ctn,
+        rate: entry.rate || 0,
+        billedQty: entry.qty * entry.ctn,
+        discount: 0,
+      }))
+    );
+    setInvoiceData(allEntries);
+  }, [cart]);
+
+  useEffect(() => {
+    if (selectedBuyer) {
+      const updated = invoiceData.map(item => {
+        let billedQty = item.qty;
+        if (selectedBuyer.scheme === "3+1") {
+          billedQty = Math.round(item.qty * 3 / 4);
+        } else if (selectedBuyer.scheme === "5+1") {
+          billedQty = Math.round(item.qty * 5 / 6);
+        }
+        return {
+          ...item,
+          billedQty,
+          discount: selectedBuyer.dis1 || 0,
+        };
+      });
+      setInvoiceData(updated);
+    }
+  }, [selectedBuyer]);
+
+  const handleChange = (index, field, value) => {
+    const newData = [...invoiceData];
+    newData[index][field] = value;
+    setInvoiceData(newData);
+  };
+
+  const grandTotal = invoiceData.reduce((sum, item) => {
+    const billed = parseFloat(item.billedQty) || 0;
+    const rate = parseFloat(item.rate) || 0;
+    const discount = parseFloat(item.discount) || 0;
+    const gross = billed * rate;
+    return sum + (gross - (gross * discount / 100));
+  }, 0);
+
+  const handleSend = () => {
+    if (!selectedBuyer) return alert("कृपया Buyer चुनें।");
+
+    exportInvoiceExcel(invoiceData, selectedBuyer, grandTotal);
+    const msg = [
+      `🧾 *Invoice from ${selectedBuyer.name}*`,
+      `No: ${invoiceNo}`,
+      ...invoiceData.map((item, i) => `${i + 1}. ${item.name} | Qty: ${item.qty} | Billed: ${item.billedQty} | ₹${item.rate}`),
+      `\nTotal: ₹${grandTotal.toFixed(2)}`
+    ].join("\n");
+
+    window.open(`https://wa.me/919929988408?text=${encodeURIComponent(msg)}`, '_blank');
+    onSubmit();
+  };
+
+  const handleAddMore = () => {
+    setTab("categories");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-4 grid gap-6">
+      {/* Buyer & Invoice Input */}
+      <section className="bg-white p-4 rounded shadow-md space-y-4">
+        <h2 className="text-xl font-bold border-b pb-2">🧾 Generate Invoice</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-600">Select Buyer</label>
+            <select
+              className="w-full border px-3 py-2 rounded"
+              value={selectedBuyer?.name || ""}
+              onChange={e => setSelectedBuyer(buyersList.find(b => b.name === e.target.value) || null)}
+            >
+              <option value="">-- Select Buyer --</option>
+              {buyersList.map((b, i) => <option key={i} value={b.name}>{b.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600">Invoice No</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={customInvoiceNo}
+                onChange={(e) => setCustomInvoiceNo(e.target.value)}
+                className="border px-3 py-2 rounded w-full"
+                placeholder="   "
+              />
+              <span className="text-gray-500">-2025-26</span>
+            </div>
+          </div>
+        </div>
+
+        {selectedBuyer && (
+          <div className="bg-blue-50 p-4 rounded-md text-sm space-y-1">
+            <p><strong>💼 Buyer:</strong> {selectedBuyer.name}</p>
+            <p><strong>🏠 Address:</strong> {selectedBuyer.address}</p>
+            <p><strong>🧾 GSTIN:</strong> {selectedBuyer.gstin}</p>
+            <p><strong>📄 Invoice No:</strong> {invoiceNo}</p>
+          </div>
+        )}
+      </section>
+
+      {/* Invoice Table */}
+      <section className="overflow-x-auto">
+        <table className="min-w-full text-sm border bg-white">
+          <thead className="bg-blue-100 text-gray-700">
+            <tr>
+              {["Item", "Batch", "MFG", "EXP", "Qty", "Rate", "Billed Qty", "Disc %", "Total ₹"].map((head, i) => (
+                <th key={i} className="border p-2 font-semibold text-center">{head}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceData.map((item, i) => {
+              const lineTotal = (item.billedQty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2);
+              return (
+                <tr key={i} className={item.discount > 0 ? "bg-yellow-50" : ""}>
+                  <td className="border p-2 font-medium">{item.name}</td>
+                  <td className="border p-2 text-center">{item.batch}</td>
+                  <td className="border p-2 text-center">{item.mfg}</td>
+                  <td className="border p-2 text-center">{item.exp}</td>
+                  <td className="border p-2 text-center font-bold">{item.qty}</td>
+                  <td className="border p-2 text-center">
+                    <input type="number" value={item.rate} onChange={e => handleChange(i, 'rate', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                  </td>
+                  <td className="border p-2 text-center">
+                    <input type="number" value={item.billedQty} onChange={e => handleChange(i, 'billedQty', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                  </td>
+                  <td className="border p-2 text-center">
+                    <input type="number" value={item.discount} onChange={e => handleChange(i, 'discount', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                  </td>
+                  <td className="border p-2 font-bold text-green-700 text-center">₹ {lineTotal}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+
+      <div className="text-right text-lg font-bold text-gray-800 bg-yellow-50 p-3 rounded shadow">
+        Grand Total: ₹ {grandTotal.toFixed(2)}
+      </div>
+
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow-md py-3 flex justify-center gap-6 print:hidden">
+        <button disabled={!selectedBuyer} onClick={() => window.print()} className={`px-6 py-2 rounded-full text-white font-semibold ${selectedBuyer ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`}>🖨️ Print Invoice</button>
+        <button disabled={!selectedBuyer} onClick={handleSend} className={`px-6 py-2 rounded-full text-white font-semibold ${selectedBuyer ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}>📤 WhatsApp</button>
+        <button onClick={handleAddMore} className="px-6 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">➕ Add More Items</button>
+      </div>
+
+      {selectedBuyer && (
+        <PDFInvoice cart={invoiceData} buyer={{ ...selectedBuyer, invoiceNumber: invoiceNo }} grandTotal={grandTotal} />
+      )}
+    </div>
+  );
+}

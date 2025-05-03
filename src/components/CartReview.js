@@ -63,7 +63,7 @@ export default function CartReview({
             </div>
 
             {item.entries.map((entry, batchIndex) => (
-              <div key={batchIndex} className="flex flex-wrap gap-3 items-end mb-3 border p-2 rounded-md bg-gray-50">
+              <div key={batchIndex} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 items-end mb-3 border p-3 rounded-md bg-gray-50">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Batch No.</label>
                   <input
@@ -82,7 +82,9 @@ export default function CartReview({
                         }
                       }
                     }}
-                    className="border px-3 py-1 rounded w-32"
+                    className="border px-3 py-1 rounded w-full"
+                    tabIndex={1}
+                    enterKeyHint="next"
                   />
                   <datalist id={`batches-${itemIndex}-${batchIndex}`}>
                     {(getBatchDetails.getBatchesForItem(item.name) || []).map((batch, i) => (
@@ -95,10 +97,13 @@ export default function CartReview({
                   <label className="block text-xs text-gray-800 mb-1">Qty (pcs)</label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    enterKeyHint="next"
                     value={entry.qty || ""}
                     onChange={(e) => handleBatchChange(itemIndex, batchIndex, 'qty', parseInt(e.target.value) || 0)}
                     min="0"
-                    className={`border px-1 py-1 rounded w-20 ${entry.qty > 0 ? 'border-green-400' : 'border-gray-300'}`}
+                    className={`border px-2 py-1 rounded w-full ${entry.qty > 0 ? 'border-green-400' : 'border-gray-300'}`}
+                    tabIndex={2}
                   />
                 </div>
 
@@ -106,10 +111,13 @@ export default function CartReview({
                   <label className="block text-xs text-gray-500 mb-1">CTN</label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    enterKeyHint="next"
                     value={entry.ctn || ""}
                     onChange={(e) => handleBatchChange(itemIndex, batchIndex, 'ctn', parseInt(e.target.value) || 0)}
                     min="0"
-                    className={`border px-3 py-1 rounded w-20 ${entry.ctn > 0 ? 'border-green-800' : 'border-gray-300'}`}
+                    className={`border px-3 py-1 rounded w-full ${entry.ctn > 0 ? 'border-green-800' : 'border-gray-300'}`}
+                    tabIndex={3}
                   />
                 </div>
 
@@ -119,6 +127,8 @@ export default function CartReview({
                     type="text"
                     placeholder="MM-YYYY"
                     maxLength={7}
+                    inputMode="numeric"
+                    enterKeyHint="next"
                     value={entry.mfg || ""}
                     onChange={(e) => {
                       let val = e.target.value.replace(/[^0-9\-]/g, '');
@@ -127,7 +137,8 @@ export default function CartReview({
                       }
                       handleBatchChange(itemIndex, batchIndex, 'mfg', val);
                     }}
-                    className="border px-3 py-1 rounded w-20 text-sm"
+                    className="border px-3 py-1 rounded w-full text-sm"
+                    tabIndex={4}
                   />
                 </div>
 
@@ -137,6 +148,8 @@ export default function CartReview({
                     type="text"
                     placeholder="MM-YYYY"
                     maxLength={7}
+                    inputMode="numeric"
+                    enterKeyHint="next"
                     value={entry.exp || ""}
                     onChange={(e) => {
                       let val = e.target.value.replace(/[^0-9\-]/g, '');
@@ -145,7 +158,8 @@ export default function CartReview({
                       }
                       handleBatchChange(itemIndex, batchIndex, 'exp', val);
                     }}
-                    className="border px-3 py-1 rounded w-20 text-sm"
+                    className="border px-3 py-1 rounded w-full text-sm"
+                    tabIndex={5}
                   />
                 </div>
 
@@ -154,22 +168,25 @@ export default function CartReview({
                     <label className="block text-xs text-gray-500 mb-1">Rate ₹</label>
                     <input
                       type="number"
+                      inputMode="numeric"
+                      enterKeyHint="done"
                       value={entry.rate || ""}
                       onChange={(e) => handleBatchChange(itemIndex, batchIndex, 'rate', parseFloat(e.target.value) || 0)}
-                      className="border px-3 py-1 rounded w-24"
+                      className="border px-3 py-1 rounded w-full"
+                      tabIndex={6}
                     />
                   </div>
                 )}
 
                 {(entry.qty > 0 && entry.ctn > 0) && (
-                  <div className="text-sm font-semibold text-green-700 ml-2">
+                  <div className="text-sm font-semibold text-green-700">
                     Total: {entry.qty * entry.ctn} pcs
                   </div>
                 )}
 
                 <button
                   onClick={() => handleRemove(itemIndex, batchIndex)}
-                  className="text-red-500 hover:text-red-700 text-xs ml-2"
+                  className="text-red-500 hover:text-red-700 text-xs"
                 >❌ Remove</button>
               </div>
             ))}
@@ -183,34 +200,34 @@ export default function CartReview({
       )}
 
       {cart.length > 0 && (
-  <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 p-4 shadow-md z-50 flex justify-center flex-wrap gap-4 transition-all duration-300">
-    <button
-      onClick={() => setTab("categories")}
-      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full text-base font-semibold"
-    >
-      ➕ Add More
-    </button>
+        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 p-4 shadow-md z-50 flex justify-center flex-wrap gap-4 transition-all duration-300">
+          <button
+            onClick={() => setTab("categories")}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full text-base font-semibold"
+          >
+            ➕ Add More
+          </button>
 
-    <button
-      onClick={handleSubmit}
-      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full text-base font-semibold"
-    >
-      ➡️ आगे जाएं
-    </button>
-  </div>
-)}
+          <button
+            onClick={handleSubmit}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full text-base font-semibold"
+          >
+            ➡️ आगे जाएं
+          </button>
+        </div>
+      )}
 
-{cart.length === 0 && (
-  <div className="text-center mt-10">
-    <p className="text-gray-500 mb-4">🛒 No items in cart.</p>
-    <button
-      onClick={() => setTab("categories")}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold"
-    >
-      ➕ Add Items
-    </button>
-  </div>
-)}
+      {cart.length === 0 && (
+        <div className="text-center mt-10">
+          <p className="text-gray-500 mb-4">🛒 No items in cart.</p>
+          <button
+            onClick={() => setTab("categories")}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold"
+          >
+            ➕ Add Items
+          </button>
+        </div>
+      )}
 
     </div>
   );
