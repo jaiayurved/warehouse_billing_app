@@ -1,3 +1,5 @@
+// ✅ Final working version of InvoiceCartReview.js with layout restored + separate WhatsApp button
+
 import React, { useState, useEffect } from 'react';
 import exportInvoiceExcel from "../utils/exportInvoiceExcel";
 import PDFInvoice from "./PDFInvoice";
@@ -68,9 +70,16 @@ export default function InvoiceCartReview({
     return sum + (gross - (gross * discount / 100));
   }, 0);
 
-  const handlePrintAll = () => {
+  const handlePrintOnly = () => {
     if (!selectedBuyer) return alert("कृपया Buyer चुनें।");
+    setShowPDF(true);
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
 
+  const handleWhatsAppOnly = () => {
+    if (!selectedBuyer) return alert("कृपया Buyer चुनें।");
     exportInvoiceExcel(invoiceData, selectedBuyer, grandTotal);
 
     const msg = [
@@ -81,12 +90,7 @@ export default function InvoiceCartReview({
     ].join("\n");
 
     window.open(`https://wa.me/919929988408?text=${encodeURIComponent(msg)}`, '_blank');
-
-    setShowPDF(true);
-    setTimeout(() => {
-      window.print();
-      onSubmit();
-    }, 500);
+    onSubmit();
   };
 
   const handleAddMore = () => {
@@ -98,115 +102,112 @@ export default function InvoiceCartReview({
 
   return (
     <>
-    <div className="max-w-6xl mx-auto p-4 grid gap-6 print:hidden">
-      {/* Buyer & Invoice Input */}
-      <section className="bg-white p-4 rounded shadow-md space-y-4">
-        <h2 className="text-xl font-bold border-b pb-2">🧾 Generate Invoice</h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm text-gray-600">Select Buyer</label>
-            <input
-              type="text"
-              placeholder="🔍 Search buyer"
-              className="w-full border px-3 py-2 rounded mb-2 transition duration-300 focus:outline-none focus:ring focus:border-blue-300"
-              value={buyerSearch}
-              onChange={(e) => setBuyerSearch(e.target.value)}
-            />
-            <select
-              className="w-full border px-3 py-2 rounded transition duration-300 hover:shadow focus:outline-none focus:ring focus:border-blue-400"
-              value={selectedBuyer?.name || ""}
-              onChange={e => setSelectedBuyer(buyersList.find(b => b.name === e.target.value) || null)}
-            >
-              <option value="">-- Select Buyer --</option>
-              {filteredBuyers.map((b, i) => <option key={i} value={b.name}>{b.name}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600">Invoice No</label>
-            <div className="flex items-center gap-2">
+      <div className="max-w-6xl mx-auto p-4 grid gap-6 print:hidden">
+        <section className="bg-white p-4 rounded shadow-md space-y-4">
+          <h2 className="text-xl font-bold border-b pb-2">🧾 Generate Invoice</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-600">Select Buyer</label>
               <input
                 type="text"
-                value={customInvoiceNo}
-                onChange={(e) => setCustomInvoiceNo(e.target.value)}
-                className="border px-3 py-2 rounded w-full"
-                placeholder="INV-001"
+                placeholder="🔍 Search buyer"
+                className="w-full border px-3 py-2 rounded mb-2"
+                value={buyerSearch}
+                onChange={(e) => setBuyerSearch(e.target.value)}
               />
-              <span className="text-gray-500">-2025-26</span>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={selectedBuyer?.name || ""}
+                onChange={e => setSelectedBuyer(buyersList.find(b => b.name === e.target.value) || null)}
+              >
+                <option value="">-- Select Buyer --</option>
+                {filteredBuyers.map((b, i) => <option key={i} value={b.name}>{b.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-600">Invoice No</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customInvoiceNo}
+                  onChange={(e) => setCustomInvoiceNo(e.target.value)}
+                  className="border px-3 py-2 rounded w-full"
+                  placeholder="INV-001"
+                />
+                <span className="text-gray-500">-2025-26</span>
+              </div>
             </div>
           </div>
+
+          {selectedBuyer && (
+            <div className="bg-blue-50 p-4 rounded-md text-sm space-y-1">
+              <p><strong>💼 Buyer:</strong> {selectedBuyer.name}</p>
+              <p><strong>🏠 Address:</strong> {selectedBuyer.address}</p>
+              <p><strong>🧾 GSTIN:</strong> {selectedBuyer.gstin}</p>
+              <p><strong>📄 Invoice No:</strong> {invoiceNo}</p>
+            </div>
+          )}
+        </section>
+
+        <section className="overflow-x-auto">
+          <table className="min-w-full text-sm border bg-white">
+            <thead className="bg-blue-200 text-blue-900 uppercase text-xs tracking-wider">
+              <tr>
+                <th className="border p-2">Item</th>
+                <th className="border p-2">Batch</th>
+                <th className="border p-2">MFG</th>
+                <th className="border p-2">EXP</th>
+                <th className="border p-2">Qty</th>
+                <th className="border p-2">Rate</th>
+                <th className="border p-2">Billed</th>
+                <th className="border p-2">Disc %</th>
+                <th className="border p-2">Total ₹</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceData.map((item, i) => {
+                const lineTotal = (item.billedQty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2);
+                return (
+                  <tr key={i}>
+                    <td className="border p-2 font-medium">{item.name}</td>
+                    <td className="border p-2 text-center">{item.batch}</td>
+                    <td className="border p-2 text-center">{item.mfg}</td>
+                    <td className="border p-2 text-center">{item.exp}</td>
+                    <td className="border p-2 text-center font-bold">{item.qty}</td>
+                    <td className="border p-2 text-center">
+                      <input type="number" value={item.rate} onChange={e => handleChange(i, 'rate', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                    </td>
+                    <td className="border p-2 text-center">
+                      <input type="number" value={item.billedQty} onChange={e => handleChange(i, 'billedQty', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                    </td>
+                    <td className="border p-2 text-center">
+                      <input type="number" value={item.discount} onChange={e => handleChange(i, 'discount', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
+                    </td>
+                    <td className="border p-2 font-bold text-green-700 text-center">₹ {lineTotal}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+
+        <div className="text-right text-lg font-bold text-gray-800 bg-yellow-50 p-3 rounded shadow">
+          Grand Total: ₹ {grandTotal.toFixed(2)}
         </div>
-
-        {selectedBuyer && (
-          <div className="bg-blue-50 p-4 rounded-md text-sm space-y-1">
-            <p><strong>💼 Buyer:</strong> {selectedBuyer.name}</p>
-            <p><strong>🏠 Address:</strong> {selectedBuyer.address}</p>
-            <p><strong>🧾 GSTIN:</strong> {selectedBuyer.gstin}</p>
-            <p><strong>📄 Invoice No:</strong> {invoiceNo}</p>
-          </div>
-        )}
-      </section>
-
-      {/* Invoice Table */}
-      <section className="overflow-x-auto">
-        <table className="min-w-full text-sm border bg-white">
-          <thead className="bg-blue-200 text-blue-900 uppercase text-xs tracking-wider">
-            <tr>
-              <th className="border p-2 text-left font-bold">Item Name</th>
-              <th className="border p-2 text-center font-bold">Batch No.</th>
-              <th className="border p-2 text-center font-bold">MFG</th>
-              <th className="border p-2 text-center font-bold">EXP</th>
-              <th className="border p-2 text-center font-bold">Qty</th>
-              <th className="border p-2 text-center font-bold">Rate</th>
-              <th className="border p-2 text-center font-bold">Billed Qty</th>
-              <th className="border p-2 text-center font-bold">Disc %</th>
-              <th className="border p-2 text-center font-bold">Total ₹</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoiceData.map((item, i) => {
-              const lineTotal = (item.billedQty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2);
-              return (
-                <tr key={i} className={item.discount > 0 ? "bg-yellow-50" : ""}>
-                  <td className="border p-2 font-medium">{item.name}</td>
-                  <td className="border p-2 text-center">{item.batch}</td>
-                  <td className="border p-2 text-center">{item.mfg}</td>
-                  <td className="border p-2 text-center">{item.exp}</td>
-                  <td className="border p-2 text-center font-bold">{item.qty}</td>
-                  <td className="border p-2 text-center">
-                    <input type="number" value={item.rate} onChange={e => handleChange(i, 'rate', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
-                  </td>
-                  <td className="border p-2 text-center">
-                    <input type="number" value={item.billedQty} onChange={e => handleChange(i, 'billedQty', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
-                  </td>
-                  <td className="border p-2 text-center">
-                    <input type="number" value={item.discount} onChange={e => handleChange(i, 'discount', e.target.value)} className="w-20 border rounded px-2 py-1 text-right" />
-                  </td>
-                  <td className="border p-2 font-bold text-green-700 text-center">₹ {lineTotal}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-
-      <div className="text-right text-lg font-bold text-gray-800 bg-yellow-50 p-3 rounded shadow">
-        Grand Total: ₹ {grandTotal.toFixed(2)}
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow-md py-3 flex justify-center gap-4 print:hidden">
-        <button disabled={!selectedBuyer} onClick={handlePrintAll} className={`px-5 py-2 rounded-full text-white font-semibold ${selectedBuyer ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`}>🖨️ Print & Send</button>
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow-md py-3 flex flex-wrap justify-center gap-4 print:hidden">
+        <button disabled={!selectedBuyer} onClick={handlePrintOnly} className={`px-5 py-2 rounded-full text-white font-semibold ${selectedBuyer ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}>🖨️ Save PDF</button>
+        <button disabled={!selectedBuyer} onClick={handleWhatsAppOnly} className={`px-5 py-2 rounded-full text-white font-semibold ${selectedBuyer ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`}>📤 Send WhatsApp</button>
         <button onClick={handleAddMore} className="px-5 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">➕ Add More</button>
       </div>
 
-      
-    </div>
-    {showPDF && selectedBuyer && (
-      <div className="hidden print:block">
-        <PDFInvoice cart={invoiceData} buyer={{ ...selectedBuyer, invoiceNumber: invoiceNo }} grandTotal={grandTotal} />
-      </div>
-    )}
+      {showPDF && selectedBuyer && (
+        <div className="hidden print:block">
+          <PDFInvoice cart={invoiceData} buyer={{ ...selectedBuyer, invoiceNumber: invoiceNo }} grandTotal={grandTotal} />
+        </div>
+      )}
     </>
   );
 }

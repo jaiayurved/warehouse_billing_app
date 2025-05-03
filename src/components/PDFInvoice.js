@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import html2pdf from "html2pdf.js";
 
 function numberToWords(num) {
@@ -24,6 +24,7 @@ export default function PDFInvoice({ cart, buyer, grandTotal }) {
   const buyerName = buyer?.name || " ";
   const buyerAddress = buyer?.address || " ";
   const buyerGSTIN = buyer?.gstin || " ";
+  const invoiceNumber = buyer?.invoiceNumber || "2025-26/___";
 
   return (
     <>
@@ -32,90 +33,98 @@ export default function PDFInvoice({ cart, buyer, grandTotal }) {
           #pdf-invoice table tbody tr:nth-child(even) {
             background-color: #f9f9f9;
           }
+          #pdf-invoice th, #pdf-invoice td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            font-size: 12px;
+          }
+          #pdf-invoice th {
+            background-color: #E0F2FE;
+            color: #1E3A8A;
+            text-transform: uppercase;
+          }
         `}
       </style>
-      <div id="pdf-invoice" className="block text-sm p-4 relative bg-white">
-        <div className="absolute top-6 right-6 text-[10px] font-semibold text-gray-600">
-          Invoice No: {buyer?.invoiceNumber || "2025-26/___"}
-        </div>
 
+      <div id="pdf-invoice" className="block text-sm p-4 relative bg-white">
         <h2 className="text-center text-base font-bold mb-2 border-b pb-1">
           GST CREDIT INVOICE (UCS)
         </h2>
 
         {/* ✅ Seller Info */}
-        <div className="bg-gray-50 border rounded-md shadow-sm p-4 mb-4">
-          <p className="font-extrabold">🧾 Seller: ASHISH MEDICAL AGENCIES 2025-26</p>
-          <p>🏢 Address: 4381, Last Crossing Bagro Walo Ka Rasta, Chandpole Bazar, Jaipur-302001, Rajasthan, India</p>
-          <p>📇 GSTIN: 08AMBPM1559K1ZU</p>
+        <div className="mb-4">
+          <p><strong>Seller:</strong> ASHISH MEDICAL AGENCIES 2025-26</p>
+          <p><strong>Address:</strong> 4381, Last Crossing Bagro Walo Ka Rasta, Chandpole Bazar, Jaipur-302001, Rajasthan, India</p>
+          <p><strong>GSTIN:</strong> 08AMBPM1559K1ZU</p>
         </div>
 
         {/* ✅ Buyer Info */}
-        <div className="bg-gray-100 border rounded-md shadow-sm p-4 mb-4">
-          <p className="font-extrabold">Buyer Name: {buyerName}</p>
-          <p>🏠 Address: {buyerAddress}</p>
-          <p>📇 GSTIN: {buyerGSTIN}</p>
-          <p>🗓 Date: {new Date().toLocaleDateString()}</p>
+        <div className="mb-4">
+          <p><strong>Buyer:</strong> {buyerName}</p>
+          <p><strong>Address:</strong> {buyerAddress}</p>
+          <p><strong>GSTIN:</strong> {buyerGSTIN}</p>
+          <p><strong>Invoice No:</strong> {invoiceNumber}</p>
+          <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
         </div>
 
-        {/* ✅ Items Table */}
-        <table className="w-full text-xs border border-collapse">
-          <thead style={{ backgroundColor: '#E0F2FE', color: '#1E3A8A', textTransform: 'uppercase', fontSize: '12px' }}>
+        {/* ✅ Invoice Table */}
+        <table className="w-full border-collapse">
+          <thead>
             <tr>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Item Name</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Batch No.</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>MFG</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>EXP</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Qty</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Rate</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Billed Qty</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Disc %</th>
-              <th style={{ border: '1px solid #ccc', padding: '6px' }}>Total ₹</th>
+              <th>Item</th>
+              <th>Batch</th>
+              <th>MFG</th>
+              <th>EXP</th>
+              <th>Qty</th>
+              <th>Rate</th>
+              <th>Billed Qty</th>
+              <th>Disc %</th>
+              <th>Total ₹</th>
             </tr>
           </thead>
           <tbody>
             {cart.map((item, i) => {
-              const billedQty = item.billedQty || 0;
-              const rate = item.rate || 0;
-              const discount = item.discount || 0;
-              const total = (billedQty * rate * (1 - discount / 100)).toFixed(2);
+              const total = (item.billedQty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2);
               return (
                 <tr key={i}>
-                  <td className="border px-2 py-1 font-bold">{item.name}</td>
-                  <td className="border px-2 py-1">{item.batch}</td>
-                  <td className="border px-2 py-1">{item.mfg}</td>
-                  <td className="border px-2 py-1">{item.exp}</td>
-                  <td className="border px-2 py-1 text-center font-bold">{item.qty} pcs</td>
-                  <td className="border px-2 py-1 text-right">{rate}</td>
-                  <td className="border px-2 py-1 text-center">{billedQty}</td>
-                  <td className="border px-2 py-1 text-right">{discount}%</td>
-                  <td className="border px-2 py-1 text-right font-bold text-sm">₹ {total}</td>
+                  <td>{item.name}</td>
+                  <td>{item.batch}</td>
+                  <td>{item.mfg}</td>
+                  <td>{item.exp}</td>
+                  <td className="text-center">{item.qty}</td>
+                  <td className="text-right">{item.rate}</td>
+                  <td className="text-center">{item.billedQty}</td>
+                  <td className="text-right">{item.discount}%</td>
+                  <td className="text-right font-bold">₹ {total}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        <div className="text-right font-bold text-base mt-2 border-t pt-2">
+        <div className="text-right font-bold text-base mt-4">
           Grand Total: ₹ {grandTotal.toFixed(2)}
         </div>
-        <div className="text-right italic text-xs text-gray-700">{numberToWords(grandTotal)}</div>
+
+        <div className="text-right italic text-sm text-gray-700">
+          {numberToWords(grandTotal)}
+        </div>
 
         {/* ✅ Signature & Stamp */}
-        <div className="flex justify-between items-end mt-8 text-xs">
+        <div className="flex justify-between items-start mt-10 text-xs">
           <div className="text-left">
             <p className="mb-6">Receiver's Signature</p>
             <div className="w-40 border-t border-gray-400"></div>
           </div>
           <div className="text-right">
-            <p className="font-bold text-[11px]">For ASHISH MEDICAL AGENCIES</p>
+            <p className="font-bold text-sm">For ASHISH MEDICAL AGENCIES</p>
             <img src="/stamp.png" alt="Stamp" className="w-16 h-16 mt-2 opacity-80" />
             <div className="mt-1 border-t border-gray-400 w-40 mx-auto"></div>
             <p className="text-center">Authorized Signatory</p>
           </div>
         </div>
 
-        {/* ✅ Footer Always Visible for PDF */}
+        {/* ✅ Footer Always Visible */}
         <div className="mt-6 pt-3 border-t border-gray-300 text-center text-[10px] text-gray-700 leading-snug">
           <p className="font-bold text-[11px] tracking-wide">ASHISH MEDICAL AGENCIES 2025-26</p>
           <p>4381, Last Crossing Bagro Walo Ka Rasta</p>
@@ -125,35 +134,6 @@ export default function PDFInvoice({ cart, buyer, grandTotal }) {
           <p className="italic mt-1">This is a computer-generated document and does not require signature.</p>
           <p className="mt-1">SUBJECT TO JAIPUR JURISDICTION</p>
         </div>
-      </div>
-
-      {/* ✅ Save PDF Button */}
-      <div className="print:hidden text-center mt-4">
-        <button
-          onClick={() => {
-            const buyerSafe = buyerName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
-            const today = new Date().toLocaleDateString('en-GB').split('/').reverse().join('-');
-            const invoiceNumber = buyer?.invoiceNumber || "2025-26/___";
-            const fileName = `Invoice_${buyerSafe}_${today}_${invoiceNumber.replace(/\//g, '-')}.pdf`;
-
-            const element = document.getElementById("pdf-invoice");
-            if (element) {
-              html2pdf()
-                .set({
-                  margin: 0.2,
-                  filename: fileName,
-                  image: { type: 'jpeg', quality: 0.98 },
-                  html2canvas: { scale: 2 },
-                  jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-                })
-                .from(element)
-                .save();
-            }
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
-        >
-          📥 Save PDF
-        </button>
       </div>
     </>
   );
