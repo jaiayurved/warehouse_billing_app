@@ -19,6 +19,18 @@ export default function CartReview({
 }) {
   const isBilling = dealerPhone === "BILL001";
 
+  // 🆕 Modular batch details autofill
+  const autoFillBatchDetails = (itemName, batchNo, itemIndex, batchIndex) => {
+    const details = getBatchDetails(itemName, batchNo);
+    if (details) {
+      handleBatchChange(itemIndex, batchIndex, 'mfg', details.mfg || "");
+      handleBatchChange(itemIndex, batchIndex, 'exp', details.exp || "");
+      if (isBilling) {
+        handleBatchChange(itemIndex, batchIndex, 'rate', details.Rate || 0);
+      }
+    }
+  };
+
   const handleSubmit = () => {
     let firstMissingRef = null;
     const valid = cart.every((item, itemIndex) =>
@@ -73,14 +85,7 @@ export default function CartReview({
                     onChange={(e) => {
                       const val = e.target.value;
                       handleBatchChange(itemIndex, batchIndex, 'batch', val);
-                      const details = getBatchDetails(item.name, val);
-                      if (details) {
-                        handleBatchChange(itemIndex, batchIndex, 'mfg', details.mfg || "");
-                        handleBatchChange(itemIndex, batchIndex, 'exp', details.exp || "");
-                        if (isBilling) {
-                          handleBatchChange(itemIndex, batchIndex, 'rate', details.Rate || 0);
-                        }
-                      }
+                      autoFillBatchDetails(item.name, val, itemIndex, batchIndex);
                     }}
                     className="border px-3 py-1 rounded w-full"
                     tabIndex={1}
@@ -228,7 +233,6 @@ export default function CartReview({
           </button>
         </div>
       )}
-
     </div>
   );
 }

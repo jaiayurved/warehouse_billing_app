@@ -7,15 +7,21 @@ export default function ReviewPanel({
   vehicleNumber,
   notes,
   onPrint,
-  onSendWhatsapp, // retained for compatibility, not used here
+  onSendWhatsapp,
   onAddMore
 }) {
+  console.log("✅ ReviewPanel loaded with cart:", cart);
+
+  if (!cart || cart.length === 0) {
+    return <div className="text-center text-gray-500">🛒 No items to review.</div>;
+  }
+
   const totalCTN = cart.reduce((sum, item) =>
     sum + item.entries.reduce((eSum, e) => eSum + (e.ctn || 0), 0), 0
   );
 
   const handleSendWhatsapp = () => {
-    const phoneNumber = "919929988408"; // ✅ Fixed WhatsApp number
+    const phoneNumber = "919929988408";
     const dealerName = "Factory";
 
     const timestamp = new Date().toLocaleString().replace(/[/,: ]+/g, "_");
@@ -104,11 +110,15 @@ export default function ReviewPanel({
           </button>
 
           <button
-            onClick={onPrint}
-            className="bg-green-200 hover:bg-green-400 text-green-800 px-6 py-2 rounded-lg shadow transition-transform transform hover:scale-105"
-          >
-            🖨 Print
-          </button>
+  onClick={() => {
+    setTimeout(() => {
+      window.print();
+    }, 200); // Allow print DOM to load
+ 	 }}
+  	className="bg-green-200 hover:bg-green-400 text-green-800 px-6 py-2 rounded-lg shadow transition-transform transform hover:scale-105"
+>
+  🖨 Print
+</button>
 
           <button
             onClick={handleSendWhatsapp}

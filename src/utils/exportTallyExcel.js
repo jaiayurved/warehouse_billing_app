@@ -1,18 +1,10 @@
-// src/utils/exportTallyExcel.js
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import products from "../data/products"; // to get rates
 
-const exportTallyExcel = (cart) => {
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-GB"); // e.g., 25/04/2025
+export default function exportTallyExcel(cart, filename = "Stock_Journal", vehicleName = "", vehicleNumber = "", notes = "") {
+  const wsData = [];
 
-  const findRate = (itemName) => {
-    const p = products.find(p => p.name === itemName);
-    return p?.rate || 1; // default rate = 1 if not found
-  };
-
-  const headers = [
+  // Header row exactly as required
+  wsData.push([
     "Voucher Date",
     "Voucher Type Name",
     "Item Name",
@@ -24,37 +16,47 @@ const exportTallyExcel = (cart) => {
     "Item Allocations - Mfg. Date",
     "Item Allocations - Expiry Date",
     "Item Allocations - Godown Name"
-  ];
+  ]);
 
-  const dataRows = cart.flatMap(item =>
-    item.entries.map(entry => {
-      const qty = (entry.qty || 0) * (entry.ctn || 1);
-      const rate = findRate(item.name);
-      const amount = qty * rate;
-      return [
-        formattedDate,
-        "Stock Journal",
-        item.name,
-        qty,
-        rate,
-        amount,
-        "Use for Stock Journal",
-        entry.batch,
-        entry.mfg,
-        entry.exp,
-       "Main location"
-      ];
-    })
-  );
+  const today = new Date();
+  const voucherDate = today.toLocaleDateString("en-GB"); // DD/MM/YYYY
 
-  const worksheetData = [headers, ...dataRows];
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "TallyExport");
+  cart.forEach(item => {
+    item.entries
+      .filter(e => e.qty > 0 && e.ctn > 0 && e.batch)
+      .forEach(entry => {
+        const totalQty = entry.qty * entry.ctn;
+        const rate = parseFloat(entry.rate) || 0;
+        const amount = totalQty * rate;
 
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-  saveAs(blob, `Tally_StockJournal_${formattedDate.replace(/\//g, '-')}_${today.getHours()}-${today.getMinutes()}.xlsx`);
-};
+        const mfg = entry.mfg || "";
+        const exp = entry.exp || "";
 
-export default exportTallyExcel;
+        // Format MFG/EXP to MM-YYYY
+        const formatMonthYear = str => {
+          const match = str.match(/\d{2,4}-\d{2,4}/) || str.match(/\d{2}\/\d{4}/);
+          return match ? match[0].replace("/", "-") : str;
+        };
+
+        wsData.push([
+          voucherDate,
+          "Stock Journal",
+          item.name,
+          totalQty,
+          rate,
+          amount.toFixed(2),
+          "Use for Stock Journal",
+          entry.batch,
+          formatMonthYear(mfg),
+          formatMonthYear(exp),
+          "Main location"
+        ]);
+      });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "Stock Journal");
+
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+}
